@@ -175,7 +175,7 @@ class BiliYtVideoParseResult(YtVideoParseResult):
         return [
             *super().cli_args,
             "-S",
-            "+codec:h264,filesize~500M",
+            "+codec:h264,lang,filesize~500M",
         ]
 
 

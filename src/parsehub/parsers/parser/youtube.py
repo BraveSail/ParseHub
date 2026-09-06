@@ -40,7 +40,7 @@ class YtbVideoParseResult(YtVideoParseResult):
         return [
             *super().cli_args,
             "-S",
-            "+codec:h264,filesize~500M",
+            "+codec:h264,lang,filesize~500M",
             # "--write-subs", # 下载字幕
             # "--write-auto-subs", # 下载自动生成的字幕
             # "--sub-format", "ttml", # 字幕格式
