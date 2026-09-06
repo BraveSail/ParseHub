@@ -93,9 +93,11 @@ class Twitter:
                 raise Exception("error -2: 该推文开启了限制, 匿名用户无法查看")
             raise Exception(f"error -3: {result.get('reason')}")
 
+        author_name = self._extract_author_name(result)
+
         if article := result.get("article", {}):
             ta = ArticleRenderer(article["article_results"]["result"]).render()
-            return TwitterTweet(tweet_id=tweet_id, article=ta)
+            return TwitterTweet(tweet_id=tweet_id, article=ta, author_name=author_name)
 
         if note_tweet := result.get("note_tweet"):
             full_text = note_tweet.get("note_tweet_results", {}).get("result", {}).get("text", None)
@@ -143,7 +145,18 @@ class Twitter:
                         )
                     )
 
-        return TwitterTweet(tweet_id=tweet_id, full_text=full_text, media=media_list or None)
+        return TwitterTweet(
+            tweet_id=tweet_id,
+            full_text=full_text,
+            media=media_list or None,
+            author_name=author_name,
+        )
+
+    @staticmethod
+    def _extract_author_name(result: dict) -> str:
+        user_result = result.get("core", {}).get("user_results", {}).get("result", {})
+        legacy = user_result.get("legacy", {}) if isinstance(user_result, dict) else {}
+        return str(legacy.get("name") or legacy.get("screen_name") or "").strip()
 
     @staticmethod
     def _build_img_url(url: str, size: Literal["orig", "large", "medium", "small", "thumb"]):
@@ -176,11 +189,13 @@ class TwitterTweet:
         full_text: str = "",
         media: list[TwitterVideo | TwitterPhoto | TwitterAni] | None = None,
         article: TwitterArticle | None = None,
+        author_name: str = "",
     ):
         self.tweet_id = tweet_id
         self.full_text = re.sub(r"https://t\.co/[^\s,]+$", "", full_text or "") if media else full_text
         self.media = media
         self.article = article
+        self.author_name = author_name
 
 
 @dataclass

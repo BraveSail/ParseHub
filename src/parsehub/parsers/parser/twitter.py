@@ -72,8 +72,13 @@ class TwitterParser(BaseParser):
                         path = AniRef(url=m.url, ext="mp4", height=m.height, width=m.width, thumb_url=m.thumb_url)
                 media.append(path)
         if article := tweet.article:
-            return RichTextParseResult(markdown_content=article.content, title=article.title, media=media)
-        return MultimediaParseResult(content=tweet.full_text, media=media)
+            return RichTextParseResult(
+                markdown_content=article.content,
+                title=article.title,
+                media=media,
+                author_name=tweet.author_name,
+            )
+        return MultimediaParseResult(content=tweet.full_text, media=media, author_name=tweet.author_name)
 
 
 __all__ = ["TwitterParser"]
