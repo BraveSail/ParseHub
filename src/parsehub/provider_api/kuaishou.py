@@ -138,6 +138,7 @@ class KuaiShouAPI:
 @dataclass
 class KuaiShouVideo:
     title: str
+    author_name: str
     video_url: str
     thumb_url: str
     duration: int
@@ -153,6 +154,7 @@ class KuaiShouVideo:
         vi = cls._get_video(photo)
         return cls(
             title=photo.get("caption"),
+            author_name=(vision_video_detail.get("author") or {}).get("name", ""),
             video_url=vi["url"],
             thumb_url=photo.get("coverUrl"),
             duration=vi["duration"],

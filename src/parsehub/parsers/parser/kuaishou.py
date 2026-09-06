@@ -67,6 +67,7 @@ class KuaiShouParser(BaseParser):
             else:
                 return VideoParseResult(
                     title=result.title,
+                    author_name=result.author_name,
                     video=VideoRef(
                         url=result.video_url,
                         thumb_url=result.thumb_url,

@@ -34,6 +34,7 @@ class ParseResult(ABC):  # noqa: B024
         content: str = "",
         media: Sequence[AnyMediaRef] | AnyMediaRef | None = None,
         platform: Platform | None = None,
+        author_name: str = "",
     ):
         """
         :param title: 标题
@@ -46,6 +47,7 @@ class ParseResult(ABC):  # noqa: B024
         self.content = content.strip()
         self.media = media
         self.platform = platform
+        self.author_name = author_name.strip()
         self.name = slugify(
             self.title or self.content, allow_unicode=True, max_length=50, lowercase=False
         ).strip() or str(time.time_ns())
@@ -57,7 +59,7 @@ class ParseResult(ABC):  # noqa: B024
         )
         return (
             f"{self.__class__.__name__}(platform={self.platform}, title={self.title or ''},"
-            f" content={self.content or ''}, media={media_count}, "
+            f" content={self.content or ''}, author_name={self.author_name or ''}, media={media_count}, "
             f"raw_url={self.raw_url})"
         )
 
@@ -74,6 +76,7 @@ class ParseResult(ABC):  # noqa: B024
             "type": self.type.value,
             "title": self.title,
             "content": self.content,
+            "author_name": self.author_name,
             "raw_url": self.raw_url,
             "media": media,
         }
@@ -297,12 +300,14 @@ class VideoParseResult(ParseResult):
         title: str = "",
         video: str | VideoRef | None = None,
         content: str = "",
+        author_name: str = "",
     ):
         video = VideoRef(url=video) if isinstance(video, str) else video
         super().__init__(
             title=title,
             media=video,
             content=content,
+            author_name=author_name,
         )
 
 
@@ -316,9 +321,10 @@ class ImageParseResult(ParseResult):
         title: str = "",
         photo: Sequence[str | ImageRef | AniRef | LivePhotoRef] | None = None,
         content: str = "",
+        author_name: str = "",
     ):
         media = [ImageRef(url=p) if isinstance(p, str) else p for p in photo] if photo else None
-        super().__init__(title=title, media=media, content=content)
+        super().__init__(title=title, media=media, content=content, author_name=author_name)
 
 
 class MultimediaParseResult(ParseResult):
@@ -331,8 +337,9 @@ class MultimediaParseResult(ParseResult):
         title: str = "",
         media: Sequence[AnyMediaRef] | None = None,
         content: str = "",
+        author_name: str = "",
     ):
-        super().__init__(title=title, media=media, content=content)
+        super().__init__(title=title, media=media, content=content, author_name=author_name)
 
 
 class RichTextParseResult(ParseResult):
@@ -345,6 +352,7 @@ class RichTextParseResult(ParseResult):
         title: str = "",
         media: Sequence[AnyMediaRef] | None = None,
         markdown_content: str = "",
+        author_name: str = "",
     ):
         """
         :param title: 标题
@@ -352,7 +360,7 @@ class RichTextParseResult(ParseResult):
         :param markdown_content: markdown 格式正文
         """
         self.markdown_content = markdown_content
-        super().__init__(title=title, media=media, content=self.plaintext_content)
+        super().__init__(title=title, media=media, content=self.plaintext_content, author_name=author_name)
 
     def __repr__(self) -> str:
         media_items = self.media if isinstance(self.media, Sequence) else [self.media]
