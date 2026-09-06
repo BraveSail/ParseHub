@@ -14,6 +14,7 @@ from ...types import (
     VideoParseResult,
     VideoRef,
 )
+from ...utils.helpers import get_author_name
 from ..base.base import BaseParser
 
 
@@ -48,6 +49,7 @@ class TikTokParser(BaseParser):
             raise ParseError("TikTok 解析失败: 未获取到视频")
         return TikTokVideoParseResult(
             title=result.desc,
+            author_name=result.author_name,
             video=result.video,
         )
 
@@ -55,6 +57,7 @@ class TikTokParser(BaseParser):
     def _build_image_result(result: "TikTokApiResult") -> ImageParseResult:
         return ImageParseResult(
             title=result.desc,
+            author_name=result.author_name,
             photo=result.image_list,
         )
 
@@ -206,6 +209,7 @@ class TikTokApiResult:
     video: VideoRef | None = None
     desc: str = ""
     image_list: list[ImageRef] = field(default_factory=list)
+    author_name: str = ""
 
     @classmethod
     def parse(cls, json_dict: dict) -> Self:
@@ -215,8 +219,11 @@ class TikTokApiResult:
         desc = json_dict.get("desc", "")
         image_post_info: dict = json_dict.get("image_post_info", {}) or json_dict.get("imagePost", {})
         if image_post_info:
-            return cls._parse_image_post(image_post_info, desc)
-        return cls._parse_video(json_dict, desc)
+            result = cls._parse_image_post(image_post_info, desc)
+        else:
+            result = cls._parse_video(json_dict, desc)
+        result.author_name = get_author_name(json_dict.get("author"))
+        return result
 
     @classmethod
     def _parse_image_post(cls, image_post_info: dict, desc: str) -> Self:

@@ -181,6 +181,7 @@ class TestParseResultToDict(unittest.TestCase):
                 "type": "video",
                 "title": "Video title",
                 "content": "Video body",
+                "author_name": "",
                 "raw_url": "https://www.bilibili.com/video/BV123",
                 "media": {
                     "url": "https://cdn.example/video.mp4",

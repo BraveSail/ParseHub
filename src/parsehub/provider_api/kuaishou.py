@@ -8,7 +8,7 @@ import httpx
 from loguru import logger
 
 from .. import ParseError
-from ..utils.helpers import UA
+from ..utils.helpers import UA, get_author_name
 
 
 class KuaiShouAPI:
@@ -154,7 +154,7 @@ class KuaiShouVideo:
         vi = cls._get_video(photo)
         return cls(
             title=photo.get("caption"),
-            author_name=(vision_video_detail.get("author") or {}).get("name", ""),
+            author_name=get_author_name(vision_video_detail.get("author")),
             video_url=vi["url"],
             thumb_url=photo.get("coverUrl"),
             duration=vi["duration"],
@@ -536,6 +536,31 @@ class KuaishouParser:
             logger.warning(f"Failed to parse video URL: {e}")
             return None
         return None
+
+    def get_author_name(self) -> str:
+        if self.page_type == "VIDEO":
+            photo = self.client.get(f"VisionVideoDetailPhoto:{self.video_id}", {})
+            candidates = [photo]
+            for node in (self.client, self.client.get("ROOT_QUERY") or {}):
+                for key, value in node.items():
+                    if "visionVideoDetail" in key and isinstance(value, dict):
+                        detail = self.client.get(value["__ref"], {}) if "__ref" in value else value
+                        candidates.append(detail)
+            for candidate in candidates:
+                author = candidate.get("author") or candidate.get("user")
+                if isinstance(author, dict) and "__ref" in author:
+                    author = self.client.get(author["__ref"])
+                if name := get_author_name(author):
+                    return name
+                author_id = candidate.get("userId")
+                if author_id and (name := get_author_name(self.client.get(f"VisionVideoDetailAuthor:{author_id}"))):
+                    return name
+        payload = self._get_atlas_payload()
+        return (
+            get_author_name(payload.get("user"))
+            or get_author_name(payload.get("author"))
+            or get_author_name(payload.get("photo"), "userName", "user_name")
+        )
 
     def get_title_content(self):
         try:

@@ -26,6 +26,7 @@ class TieBaParser(BaseParser):
                     raise ParseError("贴吧解析失败: 未获取到视频")
                 return VideoParseResult(
                     title=tb.title,
+                    author_name=tb.author_name,
                     video=VideoRef(
                         url=tb.media.url,
                         thumb_url=tb.media.thumb_url,
@@ -74,7 +75,7 @@ class TieBaParser(BaseParser):
                                         )
                                     )
 
-                return ImageParseResult(title=tb.title, content=tb.content, photo=images)
+                return ImageParseResult(title=tb.title, content=tb.content, photo=images, author_name=tb.author_name)
 
 
 __all__ = ["TieBaParser"]

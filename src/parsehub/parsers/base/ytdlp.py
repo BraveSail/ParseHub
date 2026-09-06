@@ -22,6 +22,7 @@ from ...types import (
     VideoParseResult,
     VideoRef,
 )
+from ...utils.helpers import get_author_name
 from .base import BaseParser
 
 # 用一个不会和 yt-dlp 普通日志冲突的前缀标记进度行，stdout/stderr 读取时只解析这类行。
@@ -374,6 +375,7 @@ class YtParser(BaseParser, register=False):
             dl=video_info,
             title=video_info.title,
             content=video_info.description,
+            author_name=video_info.author_name,
             video=VideoRef(
                 url=raw_url,
                 thumb_url=video_info.thumbnail,
@@ -455,10 +457,11 @@ class YtVideoParseResult(VideoParseResult):
         title: str = "",
         video: VideoRef | None = None,
         content: str = "",
+        author_name: str = "",
     ):
         """dl: yt-dlp解析结果"""
         self.dl = dl
-        super().__init__(title=title, video=video, content=content)
+        super().__init__(title=title, video=video, content=content, author_name=author_name or dl.author_name)
 
     @property
     def cli_args(self) -> list[str]:
@@ -554,3 +557,7 @@ class YtVideoInfo:
     duration: int = 0
     width: int = 0
     height: int = 0
+
+    @property
+    def author_name(self) -> str:
+        return get_author_name(self.info_json, "uploader", "channel", "creator", "uploader_id", "channel_id")

@@ -1,13 +1,39 @@
 import asyncio
 import json
 import re
-from collections.abc import Coroutine
+from collections.abc import Coroutine, Mapping
 from typing import Any
 
 from pydantic import SecretStr
 from urlextract import URLExtract
 
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
+
+
+def get_author_name(author: object, *fields: str) -> str:
+    """Read a display name from an explicit author object, never from post content."""
+    if isinstance(author, str):
+        return author.strip()
+    if not isinstance(author, Mapping):
+        return ""
+    for field in fields or (
+        "full_name",
+        "display_name",
+        "nickname",
+        "nickName",
+        "screen_name",
+        "name_show",
+        "name",
+        "user_name",
+        "userName",
+        "username",
+        "unique_id",
+        "uniqueId",
+    ):
+        value = author.get(field)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return ""
 
 
 def run_sync[T](coro: Coroutine[Any, Any, T]) -> T:

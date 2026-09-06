@@ -8,7 +8,7 @@ from typing import Any
 
 import httpx
 
-from ..utils.helpers import UA
+from ..utils.helpers import UA, get_author_name
 
 
 class ThreadsAPIError(Exception):
@@ -89,7 +89,13 @@ class ThreadsAPI:
         post = self._extract_post(payload, code)
         if post is None:
             raise ThreadsAPIError("Fetching Post metadata failed.")
-        return ThreadsPost.from_graphql(post)
+        result = ThreadsPost.from_graphql(post)
+        if not result.author_name:
+            try:
+                result.author_name = self.get_username_by_url(url).removeprefix("@")
+            except ValueError:
+                pass
+        return result
 
     def _build_variables(self, code: str) -> dict[str, Any]:
         variables: dict[str, Any] = {"postID": str(self.shortcode_to_pk(code))}
@@ -215,12 +221,17 @@ class ThreadsMedia:
 class ThreadsPost:
     content: str
     media: ThreadsMedia | list[ThreadsMedia] | None = None
+    author_name: str = ""
 
     @classmethod
     def from_graphql(cls, post: dict[str, Any]) -> ThreadsPost:
         caption = post.get("caption")
         content = caption.get("text") if isinstance(caption, dict) else caption
-        return cls(content=str(content or ""), media=cls._fetch_media(post))
+        return cls(
+            content=str(content or ""),
+            media=cls._fetch_media(post),
+            author_name=get_author_name(post.get("user")),
+        )
 
     @classmethod
     def _fetch_media(cls, d: dict[str, Any]) -> ThreadsMedia | list[ThreadsMedia]:

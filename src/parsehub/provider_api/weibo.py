@@ -10,6 +10,8 @@ from urllib.parse import urlparse
 
 import httpx
 
+from ..utils.helpers import get_author_name
+
 
 class WeiboAPI:
     def __init__(self, proxy: str | None = None):
@@ -311,9 +313,12 @@ class Data:
     page_info: PageInfo | None = None
     mix_media_info: MixMediaInfo | None = None
     retweeted_status: "Data | None" = None
+    author_name: str = ""
 
     @classmethod
     def parse(cls, data_dict: dict) -> Self:
+        data_dict = dict(data_dict)
+        data_dict["author_name"] = get_author_name(data_dict.get("user"))
         if page_info := data_dict.get("page_info"):
             data_dict["page_info"] = PageInfo.parse(page_info)
         if pic_infos := data_dict.get("pic_infos"):
@@ -366,6 +371,7 @@ class WeiboTVContent:
     video_url: str
     video_duration: float
     cover_image: str
+    author_name: str = ""
 
     @classmethod
     def parse(cls, json_dict: dict) -> Self:
@@ -377,7 +383,13 @@ class WeiboTVContent:
         text = cpp["text"]
         urls: dict[str, str] = cpp["urls"]
         video_url = f"https:{list(urls.values())[0]}"
-        return cls(text=text, video_url=video_url, video_duration=duration_time, cover_image=cover_image)
+        return cls(
+            text=text,
+            video_url=video_url,
+            video_duration=duration_time,
+            cover_image=cover_image,
+            author_name=get_author_name(cpp.get("user")) or get_author_name(cpp, "author", "screen_name"),
+        )
 
 
 if __name__ == "__main__":

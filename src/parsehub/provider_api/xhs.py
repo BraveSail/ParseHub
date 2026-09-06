@@ -11,6 +11,7 @@ import httpx
 from bs4 import BeautifulSoup
 
 from ..errors import ParseError
+from ..utils.helpers import get_author_name
 
 
 class XHSAPI:
@@ -51,7 +52,13 @@ class XHSAPI:
 
         title = note["title"]
         desc = note["desc"]
-        return XHSPost(type=self.__get_post_type(note), title=title, desc=desc, media=self.__parse_media(note))
+        return XHSPost(
+            type=self.__get_post_type(note),
+            title=title,
+            desc=desc,
+            media=self.__parse_media(note),
+            author_name=get_author_name(note.get("user")),
+        )
 
     @staticmethod
     def __get_post_type(note: dict[str, Any]) -> XHSPostType:
@@ -171,6 +178,7 @@ class XHSPost:
     title: str
     desc: str
     media: list[XHSMedia] | None = None
+    author_name: str = ""
 
 
 if __name__ == "__main__":

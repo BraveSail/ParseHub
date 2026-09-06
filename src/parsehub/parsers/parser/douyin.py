@@ -17,6 +17,7 @@ from ...types import (
     VideoParseResult,
     VideoRef,
 )
+from ...utils.helpers import get_author_name
 from ..base.base import BaseParser
 
 
@@ -68,6 +69,7 @@ class DouyinParser(BaseParser):
             raise ParseError("抖音解析失败: 未获取到视频")
         return DouyinVideoParseResult(
             title=result.desc,
+            author_name=result.author_name,
             video=result.video,
         )
 
@@ -76,6 +78,7 @@ class DouyinParser(BaseParser):
         """构建图片解析结果"""
         return DouyinImageParseResult(
             title=result.desc,
+            author_name=result.author_name,
             photo=result.image_list,
         )
 
@@ -183,6 +186,7 @@ class DouyinApiResult:
     video: VideoRef | None = None
     desc: str = ""
     image_list: list[ImageRef | LivePhotoRef] = field(default_factory=list)
+    author_name: str = ""
 
     @classmethod
     def parse(cls, json_dict: dict) -> Self:
@@ -193,11 +197,13 @@ class DouyinApiResult:
         desc = data.get("desc", "")
 
         if images := data.get("images"):
-            return cls._parse_images(images, desc)
+            result = cls._parse_images(images, desc)
         elif image_post_info := data.get("image_post_info"):
-            return cls._parse_image_post_info(image_post_info, desc)
+            result = cls._parse_image_post_info(image_post_info, desc)
         else:
-            return cls._parse_video(data, desc)
+            result = cls._parse_video(data, desc)
+        result.author_name = get_author_name(data.get("author"))
+        return result
 
     @classmethod
     def _parse_images(cls, images: list[dict], desc: str) -> Self:

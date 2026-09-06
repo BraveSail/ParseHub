@@ -29,10 +29,15 @@ class InstagramParser(BaseParser):
                     else ImageRef(url=i.display_url, width=i.width, height=i.height)
                     for i in post.get_sidecar_nodes()
                 ]
-                return MultimediaParseResult(media=media, title=post.title, content=post.caption)
+                return MultimediaParseResult(
+                    media=media, title=post.title, content=post.caption, author_name=post.author_name
+                )
             case InstagramMediaType.IMAGE:
                 return ImageParseResult(
-                    photo=[ImageRef(url=post.url, width=width, height=height)], title=post.title, content=post.caption
+                    photo=[ImageRef(url=post.url, width=width, height=height)],
+                    title=post.title,
+                    content=post.caption,
+                    author_name=post.author_name,
                 )
             case InstagramMediaType.VIDEO:
                 return VideoParseResult(
@@ -44,6 +49,7 @@ class InstagramParser(BaseParser):
                         height=height,
                     ),
                     title=post.title,
+                    author_name=post.author_name,
                     content=post.caption,
                 )
             case _:

@@ -13,6 +13,7 @@ class ZuiYouParser(BaseParser):
         zy = await ZuiYou(self.proxy).parse(raw_url)
         return MultimediaParseResult(
             content=zy.content,
+            author_name=zy.author_name,
             media=[
                 VideoRef(url=i.url, thumb_url=i.thumb_url)
                 if i.type == MediaType.VIDEO

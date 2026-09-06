@@ -20,6 +20,7 @@ class PipixParser(BaseParser):
         if ppx.video_url:
             return VideoParseResult(
                 title=ppx.content,
+                author_name=ppx.author_name,
                 video=VideoRef(
                     url=ppx.video_url,
                     thumb_url=ppx.video_thumb,
@@ -29,7 +30,7 @@ class PipixParser(BaseParser):
                 ),
             )
         else:
-            return ImageParseResult(title=ppx.content, photo=ppx.img_url)
+            return ImageParseResult(title=ppx.content, photo=ppx.img_url, author_name=ppx.author_name)
 
 
 __all__ = ["PipixParser"]

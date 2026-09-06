@@ -19,7 +19,7 @@ from ...types import (
     VideoParseResult,
     VideoRef,
 )
-from ...utils.helpers import UA
+from ...utils.helpers import UA, get_author_name
 from ..base.base import BaseParser
 from ..base.ytdlp import YtParser, YtVideoParseResult
 
@@ -44,6 +44,7 @@ class BiliParse(BaseParser):
                         photos.append(ImageRef(url=i.url, width=i.width, height=i.height))
             return ImageParseResult(
                 title=dynamic.title or "",
+                author_name=dynamic.author_name,
                 content=content,
                 photo=photos,
             )
@@ -130,6 +131,7 @@ class BiliParse(BaseParser):
             content = ""
         return BiliVideoParseResult(
             title=data["View"]["title"],
+            author_name=get_author_name(view.get("owner")),
             content=content,
             video=VideoRef(
                 url=video_url,

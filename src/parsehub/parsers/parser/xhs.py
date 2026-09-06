@@ -39,6 +39,7 @@ class XHSParser(BaseParser):
                         url=v.url, thumb_url=v.thumb_url, duration=v.duration, height=v.height, width=v.width
                     ),
                     title=result.title,
+                    author_name=result.author_name,
                     content=desc,
                 )
             case XHSPostType.IMAGE:
@@ -61,6 +62,7 @@ class XHSParser(BaseParser):
                 return ImageParseResult(
                     photo=photos,
                     title=result.title,
+                    author_name=result.author_name,
                     content=desc,
                 )
             case _:

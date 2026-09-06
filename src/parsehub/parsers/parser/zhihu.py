@@ -25,25 +25,30 @@ class ZhihuParser(BaseParser):
         match result:
             case ZhihuQA():
                 if not result.markdown_answer:
-                    return MultimediaParseResult(title=result.question)
+                    return MultimediaParseResult(title=result.question, author_name=result.author_name)
                 return RichTextParseResult(
                     title=result.question,
+                    author_name=result.author_name,
                     media=[ImageRef(url=i) for i in result.imgs],
                     markdown_content=result.markdown_answer,
                 )
             case ZhihuZhuanLan():
                 return RichTextParseResult(
                     title=result.title,
+                    author_name=result.author_name,
                     markdown_content=result.markdown_content,
                     media=[ImageRef(url=i) for i in result.imgs],
                 )
             case ZhihuPin():
                 match result.type:
                     case ZhihuPinType.TEXT:
-                        return ImageParseResult(title=result.title, content=result.plaintext_content)
+                        return ImageParseResult(
+                            title=result.title, content=result.plaintext_content, author_name=result.author_name
+                        )
                     case ZhihuPinType.IMAGE:
                         return ImageParseResult(
                             title=result.title,
+                            author_name=result.author_name,
                             content=result.plaintext_content,
                             photo=[
                                 ImageRef(url=i.url, thumb_url=i.thumb_url, width=i.width, height=i.height)
@@ -54,6 +59,7 @@ class ZhihuParser(BaseParser):
                         v = result.media[0]
                         return VideoParseResult(
                             title=result.title,
+                            author_name=result.author_name,
                             content=result.plaintext_content,
                             video=VideoRef(
                                 url=v.url, thumb_url=v.thumb_url, height=v.height, width=v.width, duration=v.duration

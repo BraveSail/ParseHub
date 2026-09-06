@@ -7,6 +7,8 @@ from bs4 import BeautifulSoup
 from markdown import markdown
 from markdownify import MarkdownConverter
 
+from ..utils.helpers import get_author_name
+
 TOPIC_API = "https://m.douban.com/rexxar/api/v2/group/topic/{}"
 IMAGE_REFERER = "https://www.douban.com/"
 """豆瓣图床有防盗链, 下载图片时必须带上 Referer"""
@@ -83,6 +85,7 @@ class DoubanTopic:
     image_layout: Literal["horizontal", "vertical"]  # vertical 图文混排, horizontal 图集
     video: DoubanVideo | None = None
     photos: list[DoubanPhoto] = field(default_factory=list)
+    author_name: str = ""
 
     @classmethod
     def parse(cls, data: dict) -> "DoubanTopic":
@@ -93,6 +96,7 @@ class DoubanTopic:
         video_info = data.get("video_info") or {}
         return cls(
             title=data.get("title") or "",
+            author_name=get_author_name(data.get("author")),
             markdown_content=markdown_content,
             text_content=text_content,
             video=parse_video(video_info) if video_info else None,

@@ -7,7 +7,7 @@ from urllib.parse import unquote
 import httpx
 from bs4 import BeautifulSoup
 
-from ..utils.helpers import UA
+from ..utils.helpers import UA, get_author_name
 
 
 class Pipix:
@@ -58,6 +58,7 @@ class Pipix:
             video_duration,
             video_height,
             video_width,
+            author_name=get_author_name(item.get("author")),
         )
 
 
@@ -71,6 +72,7 @@ class PipixPost:
     video_duration: int | None = 0
     video_height: int | None = 0
     video_width: int | None = 0
+    author_name: str = ""
 
 
 class PipixPostType(Enum):

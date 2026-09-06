@@ -7,7 +7,7 @@ from markdown import markdown
 from markdownify import MarkdownConverter
 
 from ..types import ParseError
-from ..utils.helpers import UA
+from ..utils.helpers import UA, get_author_name
 
 
 class WXConverter(MarkdownConverter):
@@ -29,6 +29,7 @@ class WX:
     imgs: list[str]
     markdown_content: str
     text_content: str
+    author_name: str = ""
 
     @staticmethod
     async def parse(url: str, proxy: str | None = None) -> "WX":
@@ -40,6 +41,10 @@ class WX:
     @classmethod
     def _parse_html(cls, html: str) -> "WX":
         soup = BeautifulSoup(html, "lxml")
+        author = soup.select_one("#js_name, .profile_nickname, .wx_follow_nickname")
+        author_name = author.get_text(strip=True) if author else ""
+        if not author_name and (meta := soup.find("meta", {"name": "author"})):
+            author_name = get_author_name(meta.get("content"))
         title_tag = soup.find("h1", {"class": "rich_media_title"})
         title = title_tag.text.strip() if isinstance(title_tag, Tag) else ""
         wxc = WXConverter(heading_style="ATX")
@@ -48,7 +53,7 @@ class WX:
 
             markdown_content = wxc.convert(str(rich_media_content))
             text_content = "".join(BeautifulSoup(markdown(markdown_content), "lxml").find_all(string=True))
-            return cls(title, imgs, markdown_content, text_content)
+            return cls(title, imgs, markdown_content, text_content, author_name=author_name)
         elif isinstance(share_content_page := soup.find("div", {"class": "share_content_page"}), Tag):
             imgs = [str(i.get("data-src") or "") for i in share_content_page.find_all("div", {"class": "swiper_item"})]
 
@@ -57,6 +62,6 @@ class WX:
                 raise ParseError("获取内容失败")
             markdown_content = wxc.convert(str(description.get("content") or ""))
             text_content = "".join(BeautifulSoup(markdown(markdown_content), "lxml").find_all(string=True))
-            return cls(title, imgs, markdown_content, text_content)
+            return cls(title, imgs, markdown_content, text_content, author_name=author_name)
         else:
             raise ParseError("获取内容失败")

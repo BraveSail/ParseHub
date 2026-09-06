@@ -22,6 +22,8 @@ from cryptography.hazmat.primitives.ciphers.base import Cipher
 from cryptography.hazmat.primitives.ciphers.modes import CBC, ECB
 from markdownify import MarkdownConverter
 
+from ..utils.helpers import get_author_name
+
 
 class XiaoHeiHePostType(Enum):
     VIDEO = "video"
@@ -50,6 +52,7 @@ class XiaoHeiHePost:
     title: str
     content: str | None = None
     media: list[XiaoHeiHeMedia] | None = None
+    author_name: str = ""
 
 
 class XiaoHeiHeAPI:
@@ -61,6 +64,7 @@ class XiaoHeiHeAPI:
         link_id = self.get_link_id(url)
         data = await self.link_tree(link_id)
         link = data["link"]
+        author_name = get_author_name(link.get("user")) or get_author_name(data.get("user"))
 
         title = link["title"]
         text = link["text"]
@@ -72,6 +76,7 @@ class XiaoHeiHeAPI:
             video_thumb = link["video_thumb"]
             return XiaoHeiHePost(
                 type=post_type,
+                author_name=author_name,
                 title=title,
                 content=text,
                 media=[XiaoHeiHeMedia(type=XiaoHeiHeMediaType.VIDEO, url=video_url, thumb_url=video_thumb)],
@@ -98,7 +103,7 @@ class XiaoHeiHeAPI:
                             width=int(float(image.get("width", 0))),
                         )
                     )
-            return XiaoHeiHePost(type=post_type, title=title, content=content, media=images)
+            return XiaoHeiHePost(type=post_type, title=title, content=content, media=images, author_name=author_name)
 
     @staticmethod
     def get_link_id(url: str) -> str:

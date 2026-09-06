@@ -6,6 +6,8 @@ from typing import Any, cast
 
 import httpx
 
+from ..utils.helpers import get_author_name
+
 
 class TieBa:
     def __init__(self, proxy: str | None = None):
@@ -91,6 +93,7 @@ class TieBaPost:
     title: str
     content: str
     media: list[TieBaPhoto] | TieBaVideo | None = None
+    author_name: str = ""
 
     @classmethod
     def parse(cls, data: dict) -> "TieBaPost":
@@ -148,6 +151,7 @@ class TieBaPost:
             title=title,
             content=content,
             media=m,
+            author_name=get_author_name(origin_thread_info.get("author")) or get_author_name(thread.get("author")),
         )
 
 

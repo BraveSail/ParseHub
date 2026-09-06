@@ -27,16 +27,22 @@ class XiaoHeiHeParser(BaseParser):
                 return VideoParseResult(
                     video=self.__parse_video(xhh),
                     title=xhh.title,
+                    author_name=xhh.author_name,
                     content=xhh.content,
                 )
             case XiaoHeiHePostType.IMAGE:
                 media = self.__parse_images(xhh)
                 if not media or all(isinstance(m, ImageRef) for m in media):
-                    return ImageParseResult(photo=media, title=xhh.title, content=xhh.content)
-                return MultimediaParseResult(media=media, title=xhh.title, content=xhh.content)
+                    return ImageParseResult(
+                        photo=media, title=xhh.title, content=xhh.content, author_name=xhh.author_name
+                    )
+                return MultimediaParseResult(
+                    media=media, title=xhh.title, content=xhh.content, author_name=xhh.author_name
+                )
             case XiaoHeiHePostType.ARTICLE:
                 return RichTextParseResult(
                     title=xhh.title,
+                    author_name=xhh.author_name,
                     media=self.__parse_images(xhh),
                     markdown_content=xhh.content,
                 )

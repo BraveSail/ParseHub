@@ -39,6 +39,8 @@ from bs4 import BeautifulSoup
 from markdown import markdown
 from markdownify import MarkdownConverter
 
+from ..utils.helpers import get_author_name
+
 
 class ZhihuConverter(MarkdownConverter):
     def convert_img(self, el: Any, text: Any, parent_tags: Any) -> str:
@@ -78,13 +80,20 @@ class ZhihuQA:
     imgs: list[str]
     markdown_answer: str | None = None
     plaintext_answer: str | None = None
+    author_name: str = ""
 
     @classmethod
     def parse(cls, data: dict) -> Self:
         question = data["question"]["title"]
         answer = data["content"]
         markdown_content, plaintext_content, imgs = _zhihu_contenc_fmt(answer)
-        return cls(question=question, imgs=imgs, markdown_answer=markdown_content, plaintext_answer=plaintext_content)
+        return cls(
+            question=question,
+            imgs=imgs,
+            markdown_answer=markdown_content,
+            plaintext_answer=plaintext_content,
+            author_name=get_author_name(data.get("author")),
+        )
 
 
 @dataclass(kw_only=True)
@@ -93,13 +102,20 @@ class ZhihuZhuanLan:
     imgs: list[str]
     markdown_content: str = ""
     plaintext_content: str = ""
+    author_name: str = ""
 
     @classmethod
     def parse(cls, data: dict) -> Self:
         title = data["title"]
         content = data["content"]
         markdown_content, plaintext_content, imgs = _zhihu_contenc_fmt(content)
-        return cls(title=title, imgs=imgs, markdown_content=markdown_content, plaintext_content=plaintext_content)
+        return cls(
+            title=title,
+            imgs=imgs,
+            markdown_content=markdown_content,
+            plaintext_content=plaintext_content,
+            author_name=get_author_name(data.get("author")),
+        )
 
 
 class ZhihuPinType(Enum):
@@ -124,6 +140,7 @@ class ZhihuPin:
     media: list[ZhihuMedia]
     markdown_content: str = ""
     plaintext_content: str = ""
+    author_name: str = ""
 
     @classmethod
     def parse(cls, result: dict) -> "ZhihuPin":
@@ -163,7 +180,12 @@ class ZhihuPin:
                     )
         markdown_content, plaintext_content, imgs = _zhihu_contenc_fmt(text)
         return cls(
-            title=title, media=media, markdown_content=markdown_content, plaintext_content=plaintext_content, type=t
+            title=title,
+            media=media,
+            markdown_content=markdown_content,
+            plaintext_content=plaintext_content,
+            type=t,
+            author_name=get_author_name(result.get("author")),
         )
 
 
@@ -221,7 +243,7 @@ class ZhihuAPI:
             result = await self._answers(data[0]["id"])
             return ZhihuQA.parse(result)
         result = await self._questions(qid)
-        return ZhihuQA(question=result["title"], imgs=[])
+        return ZhihuQA(question=result["title"], imgs=[], author_name=get_author_name(result.get("author")))
 
     async def parse_zl(self, raw_url: str) -> ZhihuZhuanLan:
         zl_id = self._get_zl_id(raw_url)

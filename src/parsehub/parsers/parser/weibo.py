@@ -25,6 +25,7 @@ class WeiboParser(BaseParser):
         if isinstance(weibo, WeiboTVContent):
             return VideoParseResult(
                 content=self.f_text(weibo.text),
+                author_name=weibo.author_name,
                 video=VideoRef(
                     url=weibo.video_url,
                     thumb_url=weibo.cover_image,
@@ -41,6 +42,7 @@ class WeiboParser(BaseParser):
             if playback:
                 return VideoParseResult(
                     content=text,
+                    author_name=data.author_name,
                     video=VideoRef(
                         url=playback.url,
                         thumb_url=data.page_info.page_pic,
@@ -58,7 +60,7 @@ class WeiboParser(BaseParser):
         elif data.mix_media_info and data.mix_media_info.items:
             media_info = list(data.mix_media_info.items)
         if not media_info:
-            return MultimediaParseResult(content=text, media=[])
+            return MultimediaParseResult(content=text, media=[], author_name=data.author_name)
 
         for i in media_info:
             match i.type:
@@ -92,8 +94,8 @@ class WeiboParser(BaseParser):
                         media.append(ImageRef(url=i.media_url, thumb_url=i.thumb_url, width=i.width, height=i.height))
         if all((isinstance(m, ImageRef) or isinstance(m, LivePhotoRef)) for m in media):
             photos = [m for m in media if isinstance(m, ImageRef | LivePhotoRef)]
-            return ImageParseResult(content=text, photo=photos)
-        return MultimediaParseResult(content=text, media=media)
+            return ImageParseResult(content=text, photo=photos, author_name=data.author_name)
+        return MultimediaParseResult(content=text, media=media, author_name=data.author_name)
 
     def f_text(self, text: str | None) -> str:
         # text = re.sub(r'<a  href="https://video.weibo.com.*?>.*的微博视频.*</a>', "", text)

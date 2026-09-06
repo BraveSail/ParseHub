@@ -50,6 +50,7 @@ class KuaiShouParser(BaseParser):
 
                 return VideoParseResult(
                     title=content,
+                    author_name=ksp.get_author_name(),
                     video=VideoRef(
                         url=video.url,
                         thumb_url=cover,
@@ -81,10 +82,12 @@ class KuaiShouParser(BaseParser):
             img = ksp.get_image_list()
             if img:
                 return ImageParseResult(
-                    title=content, photo=[ImageRef(url=i.url, height=i.h, width=i.w, ext=i.e) for i in img]
+                    title=content,
+                    photo=[ImageRef(url=i.url, height=i.h, width=i.w, ext=i.e) for i in img],
+                    author_name=ksp.get_author_name(),
                 )
             if cover:
-                return ImageParseResult(title=content, photo=[ImageRef(url=cover)])
+                return ImageParseResult(title=content, photo=[ImageRef(url=cover)], author_name=ksp.get_author_name())
 
             raise ParseError("快手解析失败 -3")
 

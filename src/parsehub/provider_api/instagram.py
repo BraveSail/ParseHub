@@ -8,6 +8,8 @@ from typing import Any, cast
 
 import httpx
 
+from ..utils.helpers import get_author_name
+
 
 class InstagramAPIError(RuntimeError):
     """Instagram 接口请求或响应解析失败。"""
@@ -67,6 +69,10 @@ class InstagramPost:
     @property
     def title(self) -> str:
         return str(self._node.get("title", ""))
+
+    @property
+    def author_name(self) -> str:
+        return get_author_name(self._node.get("owner")) or get_author_name(self._node.get("user"))
 
     @property
     def caption(self) -> str:

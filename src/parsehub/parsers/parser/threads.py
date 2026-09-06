@@ -23,7 +23,7 @@ class ThreadsParser(BaseParser):
                         media.append(VideoRef(url=m.url, thumb_url=m.thumb_url, width=m.width, height=m.height))
                     case ThreadsMediaType.IMAGE:
                         media.append(ImageRef(url=m.url, thumb_url=m.url, width=m.width, height=m.height))
-        return MultimediaParseResult(content=post.content, media=media)
+        return MultimediaParseResult(content=post.content, media=media, author_name=post.author_name)
 
     async def _parse(self, url: str) -> ThreadsPost:
         # 公开帖子无需登录即可解析; 登录墙内容 (私密/受限/年龄限制) 才需要 Cookie, 有则带上

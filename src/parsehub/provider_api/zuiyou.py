@@ -4,6 +4,8 @@ from urllib.parse import urlparse
 
 import httpx
 
+from ..utils.helpers import get_author_name
+
 
 class MediaType(Enum):
     VIDEO = "video"
@@ -22,6 +24,7 @@ class ZuiYouPost:
     content: str
     media: list[Media]
     raw: dict
+    author_name: str = ""
 
     @classmethod
     def parse(cls, json: dict) -> "ZuiYouPost":
@@ -39,7 +42,7 @@ class ZuiYouPost:
                 continue
             media.append(Media(url=img_url, thumb_url=img_url, type=MediaType.PHOTO))
 
-        return cls(content=content, media=media, raw=json)
+        return cls(content=content, media=media, raw=json, author_name=get_author_name(post.get("member")))
 
 
 @dataclass

@@ -12,6 +12,7 @@ class WXParser(BaseParser):
         wx = await WX.parse(raw_url, self.proxy)
         return RichTextParseResult(
             title=wx.title,
+            author_name=wx.author_name,
             media=[ImageRef(url=i) for i in wx.imgs],
             markdown_content=wx.markdown_content,
         )

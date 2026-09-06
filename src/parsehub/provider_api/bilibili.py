@@ -12,6 +12,8 @@ from typing import Any, Self, cast
 
 import httpx
 
+from ..utils.helpers import get_author_name
+
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36"
 )
@@ -248,15 +250,15 @@ class BiliDynamic:
     title: str | None = ""
     content: str | None = ""
     images: list[BiliImage] | None = None
+    author_name: str = ""
 
     @classmethod
     def parse(cls, data: dict) -> Self:
         module_dynamic: dict = data["item"]["modules"]["module_dynamic"]
         major: dict | None = module_dynamic.get("major", None)
-        if not major:
-            return cls._parse_forward(module_dynamic)
-        else:
-            return cls._parse_major(module_dynamic, major)
+        result = cls._parse_forward(module_dynamic) if not major else cls._parse_major(module_dynamic, major)
+        result.author_name = get_author_name(data["item"]["modules"].get("module_author"))
+        return result
 
     @classmethod
     def _parse_major(cls, module_dynamic: dict, major: dict) -> Self:
