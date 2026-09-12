@@ -100,11 +100,17 @@ class Twitter:
             return TwitterTweet(tweet_id=tweet_id, article=ta, author_name=author_name)
 
         if note_tweet := result.get("note_tweet"):
-            full_text = note_tweet.get("note_tweet_results", {}).get("result", {}).get("text", None)
+            note_result = note_tweet.get("note_tweet_results", {}).get("result", {})
+            full_text = note_result.get("text", None)
+            url_entities = (note_result.get("entity_set") or {}).get("urls") or []
             if not full_text:
                 full_text = legacy.get("full_text", "")
+                url_entities = legacy["entities"].get("urls", [])
         else:
             full_text = legacy.get("full_text", "")
+            url_entities = legacy["entities"].get("urls", [])
+
+        full_text = self._restore_short_urls(full_text, url_entities)
 
         media = legacy["entities"].get("media", [])
         media_list: list[TwitterVideo | TwitterPhoto | TwitterAni] = []
@@ -153,6 +159,16 @@ class Twitter:
         )
 
     @staticmethod
+    def _restore_short_urls(text: str, url_entities: list[dict]) -> str:
+        """用 entities 中的 expanded_url 还原正文里的 t.co 短链。"""
+        for entity in url_entities:
+            short_url = entity.get("url")
+            expanded_url = entity.get("expanded_url")
+            if short_url and expanded_url:
+                text = text.replace(short_url, expanded_url)
+        return text
+
+    @staticmethod
     def _extract_author_name(result: dict) -> str:
         user_result = result.get("core", {}).get("user_results", {}).get("result", {})
         legacy = user_result.get("legacy", {}) if isinstance(user_result, dict) else {}
@@ -192,7 +208,7 @@ class TwitterTweet:
         author_name: str = "",
     ):
         self.tweet_id = tweet_id
-        self.full_text = re.sub(r"https://t\.co/[^\s,]+$", "", full_text or "") if media else full_text
+        self.full_text = re.sub(r"\s*https://t\.co/[^\s,]+$", "", full_text or "") if media else full_text
         self.media = media
         self.article = article
         self.author_name = author_name
