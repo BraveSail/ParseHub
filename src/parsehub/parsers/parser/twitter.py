@@ -53,6 +53,26 @@ class TwitterParser(BaseParser):
         return tweet
 
     @staticmethod
+    def _build_quote(tweet: TwitterTweet) -> str:
+        """把被回复的推文渲染成 Markdown 引用块, 不是回复或内容为空时返回空串."""
+        reply = tweet.reply_to
+        if not reply:
+            return ""
+        text = (reply.full_text or "").strip()
+        if not text:
+            return ""
+        handle = (reply.author_handle or "").strip()
+        name = (reply.author_name or "").strip()
+        if handle:
+            head = f"> 回复 @{handle}："
+        elif name:
+            head = f"> 回复 {name}："
+        else:
+            head = "> 回复："
+        lines = "\n".join(f"> {line}" if line.strip() else ">" for line in text.splitlines())
+        return f"{head}\n{lines}\n\n"
+
+    @staticmethod
     async def media_parse(tweet: TwitterTweet) -> MultimediaParseResult | RichTextParseResult:
         media: list[AnyMediaRef] = []
         if tweet.media:
@@ -71,14 +91,15 @@ class TwitterParser(BaseParser):
                     case TwitterAni():
                         path = AniRef(url=m.url, ext="mp4", height=m.height, width=m.width, thumb_url=m.thumb_url)
                 media.append(path)
+        quote = TwitterParser._build_quote(tweet)
         if article := tweet.article:
             return RichTextParseResult(
-                markdown_content=article.content,
+                markdown_content=f"{quote}{article.content}",
                 title=article.title,
                 media=media,
                 author_name=tweet.author_name,
             )
-        return MultimediaParseResult(content=tweet.full_text, media=media, author_name=tweet.author_name)
+        return MultimediaParseResult(content=f"{quote}{tweet.full_text}", media=media, author_name=tweet.author_name)
 
 
 __all__ = ["TwitterParser"]

@@ -23,7 +23,17 @@ class Twitter:
         self.cookie = cookie
 
     async def fetch_tweet(self, url: str) -> TwitterTweet:
-        tweet_id = self.get_id_by_url(url)
+        tweet = self.parse(await self._fetch_result(self.get_id_by_url(url)))
+        if tweet.reply_to_id:
+            try:
+                reply_to = self.parse(await self._fetch_result(tweet.reply_to_id))
+            except Exception as e:
+                logger.warning(f"获取被回复推文失败, 跳过引用: {e}")
+            else:
+                tweet.reply_to = reply_to
+        return tweet
+
+    async def _fetch_result(self, tweet_id: str) -> dict:
         headers = {
             "accept-language": "zh-CN,zh;q=0.9",
             "authorization": self.authorization,
@@ -71,7 +81,7 @@ class Twitter:
                 cookies=cookie,
             )
         response.raise_for_status()
-        return self.parse(response.json())
+        return response.json()
 
     def parse(self, result: dict) -> TwitterTweet:
         if e := result.get("errors"):
@@ -94,10 +104,18 @@ class Twitter:
             raise Exception(f"error -3: {result.get('reason')}")
 
         author_name = self._extract_author_name(result)
+        author_handle = self._extract_author_handle(result)
+        reply_to_id = str(legacy.get("in_reply_to_status_id_str") or "")
 
         if article := result.get("article", {}):
             ta = ArticleRenderer(article["article_results"]["result"]).render()
-            return TwitterTweet(tweet_id=tweet_id, article=ta, author_name=author_name)
+            return TwitterTweet(
+                tweet_id=tweet_id,
+                article=ta,
+                author_name=author_name,
+                author_handle=author_handle,
+                reply_to_id=reply_to_id,
+            )
 
         if note_tweet := result.get("note_tweet"):
             note_result = note_tweet.get("note_tweet_results", {}).get("result", {})
@@ -156,6 +174,8 @@ class Twitter:
             full_text=full_text,
             media=media_list or None,
             author_name=author_name,
+            author_handle=author_handle,
+            reply_to_id=reply_to_id,
         )
 
     @staticmethod
@@ -173,6 +193,12 @@ class Twitter:
         user_result = result.get("core", {}).get("user_results", {}).get("result", {})
         legacy = user_result.get("legacy", {}) if isinstance(user_result, dict) else {}
         return str(legacy.get("name") or legacy.get("screen_name") or "").strip()
+
+    @staticmethod
+    def _extract_author_handle(result: dict) -> str:
+        user_result = result.get("core", {}).get("user_results", {}).get("result", {})
+        legacy = user_result.get("legacy", {}) if isinstance(user_result, dict) else {}
+        return str(legacy.get("screen_name") or "").strip()
 
     @staticmethod
     def _build_img_url(url: str, size: Literal["orig", "large", "medium", "small", "thumb"]):
@@ -206,12 +232,20 @@ class TwitterTweet:
         media: list[TwitterVideo | TwitterPhoto | TwitterAni] | None = None,
         article: TwitterArticle | None = None,
         author_name: str = "",
+        author_handle: str = "",
+        reply_to_id: str = "",
+        reply_to: TwitterTweet | None = None,
     ):
         self.tweet_id = tweet_id
         self.full_text = re.sub(r"\s*https://t\.co/[^\s,]+$", "", full_text or "") if media else full_text
         self.media = media
         self.article = article
         self.author_name = author_name
+        self.author_handle = author_handle
+        self.reply_to_id = reply_to_id
+        """被回复推文的 ID，空字符串表示不是回复"""
+        self.reply_to: TwitterTweet | None = reply_to
+        """被回复的推文（由 fetch_tweet 填充，仅在是回复时）"""
 
 
 @dataclass
