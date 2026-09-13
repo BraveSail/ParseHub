@@ -35,6 +35,7 @@ class PixivImage:
     thumb_url: str | None = None
     width: int = 0
     height: int = 0
+    ext: str = "jpg"
 
 
 @dataclass
@@ -81,6 +82,16 @@ class PixivIllust:
         )
 
 
+IMAGE_EXTS = ("jpg", "jpeg", "png", "gif", "webp")
+
+
+def _guess_ext(url: str) -> str:
+    """pixiv 原图后缀随作品而定 (jpg/png/gif), 要跟着 URL 走而不是固定 jpg"""
+    name = url.split("?", 1)[0].rsplit("/", 1)[-1]
+    ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
+    return ext if ext in IMAGE_EXTS else "jpg"
+
+
 def _parse_image(page: dict[str, Any]) -> PixivImage | None:
     urls = page.get("urls") or {}
     url = urls.get("original") or urls.get("regular")
@@ -92,6 +103,7 @@ def _parse_image(page: dict[str, Any]) -> PixivImage | None:
         thumb_url=str(thumb) if thumb and thumb != url else None,
         width=int(page.get("width") or 0),
         height=int(page.get("height") or 0),
+        ext=_guess_ext(str(url)),
     )
 
 

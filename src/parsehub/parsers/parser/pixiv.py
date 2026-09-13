@@ -18,7 +18,16 @@ class PixivParser(BaseParser):
             title=illust.title,
             content=illust.description,
             author_name=illust.author_name,
-            media=[ImageRef(url=i.url, thumb_url=i.thumb_url) for i in illust.images],
+            media=[
+                ImageRef(
+                    url=i.url,
+                    thumb_url=i.thumb_url,
+                    ext=i.ext,
+                    width=i.width,
+                    height=i.height,
+                )
+                for i in illust.images
+            ],
         )
 
 

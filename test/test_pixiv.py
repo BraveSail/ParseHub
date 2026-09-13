@@ -81,6 +81,29 @@ def test_parse_maps_illust_and_pages():
     assert illust.images[0].thumb_url == PAGES_BODY[0]["urls"]["thumb_mini"]
 
 
+def test_images_carry_dimensions_and_real_ext():
+    """pages 带 width/height, 原图后缀随作品而变 (p0=jpg, p1=png)"""
+    illust = PixivIllust.parse(ILLUST_BODY, PAGES_BODY)
+    assert [(i.width, i.height) for i in illust.images] == [(1200, 1697), (1200, 1697)]
+    assert [i.ext for i in illust.images] == ["jpg", "png"]
+
+
+def test_parser_forwards_dimensions_to_image_ref(monkeypatch):
+    """inline 的 InlineQueryResultPhoto 直接用 ImageRef.width/height 当 photo_width/photo_height,
+    为 0 时 Telegram 无法渲染缩略图, 所以这一层必须把尺寸带出去"""
+    import parsehub.parsers.parser.pixiv as parser_mod
+
+    async def fake_parse(self, url):  # noqa: ANN001, ARG001
+        return PixivIllust.parse(ILLUST_BODY, PAGES_BODY)
+
+    monkeypatch.setattr(parser_mod.Pixiv, "parse", fake_parse)
+    result = ParseHub().parse_sync("https://www.pixiv.net/artworks/95276699")
+
+    assert [(m.width, m.height) for m in result.media] == [(1200, 1697), (1200, 1697)]
+    assert [m.ext for m in result.media] == ["jpg", "png"]
+    assert all(m.thumb_url for m in result.media)
+
+
 def test_parse_strips_description_html():
     illust = PixivIllust.parse(ILLUST_BODY, PAGES_BODY)
     assert "<br" not in illust.description
