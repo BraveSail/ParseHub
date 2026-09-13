@@ -1,3 +1,4 @@
+import math
 import re
 from dataclasses import dataclass
 from typing import Any, cast
@@ -11,11 +12,16 @@ PAGES_API = "https://www.pixiv.net/ajax/illust/{}/pages"
 REFERER = "https://www.pixiv.net/"
 """pixiv 的 ajax 接口和 i.pximg.net 图床都校验 Referer, 不带会 403"""
 
+MASTER_LONG_EDGE = 1200
+"""pixiv master1200 版本的最大边长 (原图会被缩到长边 1200, 存成 jpg)"""
+
 # /artworks/<id> (可能带语言前缀, 如 /en/artworks/<id>), 以及旧式 member_illust.php?illust_id=<id>
 ILLUST_URL_RES = (
     r"pixiv\.net/(?:[a-z]{2}(?:-[a-z]{2})?/)?artworks/(\d+)",
     r"pixiv\.net/member_illust\.php\?(?:[^#]*&)?illust_id=(\d+)",
 )
+
+ORIGINAL_URL_RE = re.compile(r"^https://i\.pximg\.net/img-original/img/(.+)_p(\d+)\.[a-zA-Z]+$")
 
 UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -86,24 +92,58 @@ IMAGE_EXTS = ("jpg", "jpeg", "png", "gif", "webp")
 
 
 def _guess_ext(url: str) -> str:
-    """pixiv 原图后缀随作品而定 (jpg/png/gif), 要跟着 URL 走而不是固定 jpg"""
+    """后缀跟着 URL 走 (master1200 恒为 jpg, 未转换的原图可能是 png/gif)"""
     name = url.split("?", 1)[0].rsplit("/", 1)[-1]
     ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
     return ext if ext in IMAGE_EXTS else "jpg"
 
 
+def _to_master_url(url: str) -> str:
+    """原图链接 -> master1200 (长边 1200 的 jpg)
+
+    原图可能非常大 (实测 6000x6000 / 7MB), Telegram 抓它当照片时稳定失败
+    (400 failed to get HTTP URL content); master1200 只有 ~1MB, 同尺寸下 TG 能正常抓取。
+    其他平台的 url 也都是中等尺寸 (twitter 的 large / instagram 的 display_url) 而非原图。
+    """
+    if not (matched := ORIGINAL_URL_RE.match(url)):
+        return url
+    path, page = matched.groups()
+    return f"https://i.pximg.net/img-master/img/{path}_p{page}_master1200.jpg"
+
+
+def _master_size(width: int, height: int) -> tuple[int, int]:
+    """master1200 的尺寸: 长边缩到 1200, 短边按比例 (pixiv 是向上取整)
+
+    实测 1968x2664 -> 887x1200, 6000x6000 -> 1200x1200。
+    尺寸只用于告诉 Telegram 结果卡片多大, 差 1px 无影响。
+    """
+    longest = max(width, height)
+    if longest <= MASTER_LONG_EDGE:
+        return width, height
+    scale = MASTER_LONG_EDGE / longest
+    return math.ceil(width * scale), math.ceil(height * scale)
+
+
 def _parse_image(page: dict[str, Any]) -> PixivImage | None:
     urls = page.get("urls") or {}
-    url = urls.get("original") or urls.get("regular")
-    if not url:
+    original = urls.get("original") or urls.get("regular")
+    if not original:
         return None
+    width = int(page.get("width") or 0)
+    height = int(page.get("height") or 0)
     thumb = urls.get("thumb_mini") or urls.get("small")
+    # 原图过大就换成 master1200; 本来就小的图保持原样 (小图的 master1200 未必存在)
+    if max(width, height) > MASTER_LONG_EDGE:
+        url = _to_master_url(str(original))
+        width, height = _master_size(width, height)
+    else:
+        url = str(original)
     return PixivImage(
-        url=str(url),
+        url=url,
         thumb_url=str(thumb) if thumb and thumb != url else None,
-        width=int(page.get("width") or 0),
-        height=int(page.get("height") or 0),
-        ext=_guess_ext(str(url)),
+        width=width,
+        height=height,
+        ext=_guess_ext(url),
     )
 
 
