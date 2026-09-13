@@ -1,6 +1,40 @@
-from ...provider_api.pixiv import Pixiv
-from ...types import ImageRef, MultimediaParseResult, Platform
+from pathlib import Path
+
+from ...provider_api.pixiv import REFERER, UA, Pixiv
+from ...types import (
+    DownloadResult,
+    ImageRef,
+    MultimediaParseResult,
+    Platform,
+    ProgressCallback,
+)
 from ..base.base import BaseParser
+
+
+class PixivParseResult(MultimediaParseResult):
+    """i.pximg.net 按 UA/Referer 防盗链, 不带 Referer 的下载一律 403"""
+
+    async def _do_download(
+        self,
+        *,
+        output_dir: Path,
+        callback: ProgressCallback | None = None,
+        callback_args: tuple = (),
+        callback_kwargs: dict | None = None,
+        proxy: str | None = None,
+        headers: dict | None = None,
+        connections: int = 4,
+    ) -> DownloadResult:
+        headers = {"User-Agent": UA, "Referer": REFERER}
+        return await super()._do_download(
+            output_dir=output_dir,
+            callback=callback,
+            callback_args=callback_args,
+            callback_kwargs=callback_kwargs,
+            proxy=proxy,
+            headers=headers,
+            connections=connections,
+        )
 
 
 class PixivParser(BaseParser):
@@ -14,7 +48,7 @@ class PixivParser(BaseParser):
 
     async def _do_parse(self, raw_url: str) -> MultimediaParseResult:
         illust = await Pixiv(self.proxy, cookie=self.cookie.get_value()).parse(raw_url)
-        return MultimediaParseResult(
+        return PixivParseResult(
             title=illust.title,
             content=illust.description,
             author_name=illust.author_name,
@@ -31,4 +65,4 @@ class PixivParser(BaseParser):
         )
 
 
-__all__ = ["PixivParser"]
+__all__ = ["PixivParser", "PixivParseResult"]

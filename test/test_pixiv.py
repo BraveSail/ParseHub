@@ -1,8 +1,12 @@
+from pathlib import Path
+
 import pytest
 
 from parsehub import ParseHub, Platform
-from parsehub.parsers.parser.pixiv import PixivParser
-from parsehub.provider_api.pixiv import Pixiv, PixivError, PixivIllust
+from parsehub.parsers.parser.pixiv import PixivParser, PixivParseResult
+from parsehub.provider_api.pixiv import REFERER, UA, Pixiv, PixivError, PixivIllust
+from parsehub.types import ImageRef
+from parsehub.types import result as result_mod
 
 # 结构抄自 pixiv /ajax/illust/<id> 的真实响应（只保留断言用到的字段）
 ILLUST_BODY = {
@@ -127,3 +131,24 @@ def test_parser_is_registered_and_matches_artwork_url():
     assert parsers[Platform.PIXIV] is PixivParser
     assert PixivParser.match("https://www.pixiv.net/artworks/95276699")
     assert not PixivParser.match("https://www.pixiv.net/novel/show.php?id=123")
+
+
+def test_download_sends_pixiv_referer(monkeypatch, tmp_path):
+    """i.pximg.net 对不带 Referer 的下载返回 403 (实测), 所以下载必须自己带上 Referer"""
+    captured: dict = {}
+
+    async def fake_download(url, save_path, **kwargs):  # noqa: ANN001, ANN003, ANN202, ARG001
+        captured["url"] = url
+        captured["headers"] = kwargs.get("headers")
+        Path(save_path).write_bytes(b"fake-image")
+        return str(save_path)
+
+    monkeypatch.setattr(result_mod, "download", fake_download)
+    result = PixivParseResult(
+        title="t",
+        media=[ImageRef(url="https://i.pximg.net/img-original/img/x_p0.jpg", width=1, height=1)],
+    )
+    result.download_sync(tmp_path)
+
+    assert captured["headers"] == {"User-Agent": UA, "Referer": REFERER}
+    assert captured["url"].startswith("https://i.pximg.net/")
