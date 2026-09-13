@@ -13,6 +13,7 @@ class Platform(Enum):
     INSTAGRAM = ("instagram", "Instagram")
     KUAISHOU = ("kuaishou", "快手")
     PIPIX = ("pipix", "皮皮虾")
+    PIXIV = ("pixiv", "Pixiv")
     THREADS = ("threads", "Threads")
     TIEBA = ("tieba", "贴吧")
     TWITTER = ("twitter", "Twitter")

@@ -17,6 +17,7 @@ from parsehub.parsers.parser.facebook import FacebookParse
 from parsehub.parsers.parser.instagram import InstagramParser
 from parsehub.parsers.parser.kuaishou import KuaiShouParser
 from parsehub.parsers.parser.pipix import PipixParser
+from parsehub.parsers.parser.pixiv import PixivParser
 from parsehub.parsers.parser.snapchat import Snapchatarse
 from parsehub.parsers.parser.threads import ThreadsParser
 from parsehub.parsers.parser.tieba import TieBaParser
@@ -35,6 +36,7 @@ from parsehub.provider_api.douban import Douban, DoubanTopic
 from parsehub.provider_api.instagram import InstagramAPI, InstagramPost
 from parsehub.provider_api.kuaishou import KuaiShouAPI, KuaishouParser
 from parsehub.provider_api.pipix import Pipix, PipixPost, PipixPostType
+from parsehub.provider_api.pixiv import Pixiv, PixivIllust, PixivImage
 from parsehub.provider_api.threads import ThreadsAPI, ThreadsPost
 from parsehub.provider_api.tieba import TieBa, TieBaPost
 from parsehub.provider_api.twitter import TwitterTweet
@@ -315,6 +317,23 @@ FORWARD_CASES = [
         ),
     ),
     (PipixParser, Pipix, "parse", PipixPost(PipixPostType.IMAGE, "Body", author_name=AUTHOR)),
+    (
+        PixivParser,
+        Pixiv,
+        "parse",
+        PixivIllust(
+            illust_id="1",
+            title="T",
+            author_name=AUTHOR,
+            author_id="1",
+            tags=[],
+            description="",
+            images=[PixivImage(url="https://cdn.example/image.jpg")],
+            page_count=1,
+            is_r18=False,
+            create_date="",
+        ),
+    ),
     (ThreadsParser, ThreadsParser, "_parse", ThreadsPost("Body", author_name=AUTHOR)),
     (
         TieBaParser,
