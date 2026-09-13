@@ -185,6 +185,30 @@ def test_parser_forwards_dimensions_to_image_ref(monkeypatch):
     assert all(m.thumb_url for m in result.media)
 
 
+def test_parser_marks_r18_illust_as_sensitive(monkeypatch):
+    """pixiv 的 xRestrict>0 即 R-18, 要作为打码标记传给 result"""
+    import parsehub.parsers.parser.pixiv as parser_mod
+
+    async def fake_parse(self, url):  # noqa: ANN001, ARG001
+        return PixivIllust.parse(dict(ILLUST_BODY, xRestrict=1), PAGES_BODY)
+
+    monkeypatch.setattr(parser_mod.Pixiv, "parse", fake_parse)
+    result = ParseHub().parse_sync("https://www.pixiv.net/artworks/95276699")
+    assert result.is_sensitive is True
+
+
+def test_parser_leaves_plain_illust_unmarked(monkeypatch):
+    """非 R-18 不置位, 避免误打码"""
+    import parsehub.parsers.parser.pixiv as parser_mod
+
+    async def fake_parse(self, url):  # noqa: ANN001, ARG001
+        return PixivIllust.parse(ILLUST_BODY, PAGES_BODY)
+
+    monkeypatch.setattr(parser_mod.Pixiv, "parse", fake_parse)
+    result = ParseHub().parse_sync("https://www.pixiv.net/artworks/95276699")
+    assert result.is_sensitive is False
+
+
 def test_download_sends_pixiv_referer(monkeypatch, tmp_path):
     """i.pximg.net 对不带 Referer 的下载返回 403 (实测), 所以下载必须自己带上 Referer"""
     captured: dict = {}

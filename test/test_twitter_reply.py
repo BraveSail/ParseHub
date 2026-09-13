@@ -30,6 +30,23 @@ def reply_tweet(text="original", handle="other", name="Other"):
     return TwitterTweet(tweet_id="999", full_text=text, author_handle=handle, author_name=name)
 
 
+def test_parse_reads_possibly_sensitive():
+    """推文的 legacy.possibly_sensitive 要冒泡成打码标记"""
+    payload = make_payload("hi")
+    payload["data"]["tweetResult"]["result"]["legacy"]["possibly_sensitive"] = True
+    assert Twitter().parse(payload).is_sensitive is True
+
+
+def test_parse_without_sensitive_flag_is_false():
+    """没有标记的普通推文不应被打码"""
+    assert Twitter().parse(make_payload("hi")).is_sensitive is False
+
+
+def test_parser_forwards_sensitive_flag():
+    tweet = TwitterTweet(tweet_id="1", full_text="x", is_sensitive=True)
+    assert asyncio.run(TwitterParser.media_parse(tweet)).is_sensitive is True
+
+
 def test_parse_reads_reply_target_id():
     assert Twitter().parse(make_payload("hi", reply_to_id="999")).reply_to_id == "999"
 

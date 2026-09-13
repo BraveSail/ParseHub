@@ -35,12 +35,14 @@ class ParseResult(ABC):  # noqa: B024
         media: Sequence[AnyMediaRef] | AnyMediaRef | None = None,
         platform: Platform | None = None,
         author_name: str = "",
+        is_sensitive: bool = False,
     ):
         """
         :param title: 标题
         :param media: 媒体下载链接
         :param content: 正文 (纯文本)
         :param platform: 平台
+        :param is_sensitive: 敏感内容标记 (R18/NSFW), 仅在有平台官方标记时置位
         """
         self.raw_url: str = ""
         self.title = title.strip()
@@ -48,6 +50,7 @@ class ParseResult(ABC):  # noqa: B024
         self.media = media
         self.platform = platform
         self.author_name = author_name.strip()
+        self.is_sensitive = is_sensitive
         self.name = slugify(
             self.title or self.content, allow_unicode=True, max_length=50, lowercase=False
         ).strip() or str(time.time_ns())
@@ -78,6 +81,7 @@ class ParseResult(ABC):  # noqa: B024
             "content": self.content,
             "author_name": self.author_name,
             "raw_url": self.raw_url,
+            "is_sensitive": self.is_sensitive,
             "media": media,
         }
 
@@ -301,6 +305,7 @@ class VideoParseResult(ParseResult):
         video: str | VideoRef | None = None,
         content: str = "",
         author_name: str = "",
+        is_sensitive: bool = False,
     ):
         video = VideoRef(url=video) if isinstance(video, str) else video
         super().__init__(
@@ -308,6 +313,7 @@ class VideoParseResult(ParseResult):
             media=video,
             content=content,
             author_name=author_name,
+            is_sensitive=is_sensitive,
         )
 
 
@@ -322,9 +328,12 @@ class ImageParseResult(ParseResult):
         photo: Sequence[str | ImageRef | AniRef | LivePhotoRef] | None = None,
         content: str = "",
         author_name: str = "",
+        is_sensitive: bool = False,
     ):
         media = [ImageRef(url=p) if isinstance(p, str) else p for p in photo] if photo else None
-        super().__init__(title=title, media=media, content=content, author_name=author_name)
+        super().__init__(
+            title=title, media=media, content=content, author_name=author_name, is_sensitive=is_sensitive
+        )
 
 
 class MultimediaParseResult(ParseResult):
@@ -338,8 +347,11 @@ class MultimediaParseResult(ParseResult):
         media: Sequence[AnyMediaRef] | None = None,
         content: str = "",
         author_name: str = "",
+        is_sensitive: bool = False,
     ):
-        super().__init__(title=title, media=media, content=content, author_name=author_name)
+        super().__init__(
+            title=title, media=media, content=content, author_name=author_name, is_sensitive=is_sensitive
+        )
 
 
 class RichTextParseResult(ParseResult):
@@ -353,6 +365,7 @@ class RichTextParseResult(ParseResult):
         media: Sequence[AnyMediaRef] | None = None,
         markdown_content: str = "",
         author_name: str = "",
+        is_sensitive: bool = False,
     ):
         """
         :param title: 标题
@@ -360,7 +373,13 @@ class RichTextParseResult(ParseResult):
         :param markdown_content: markdown 格式正文
         """
         self.markdown_content = markdown_content
-        super().__init__(title=title, media=media, content=self.plaintext_content, author_name=author_name)
+        super().__init__(
+            title=title,
+            media=media,
+            content=self.plaintext_content,
+            author_name=author_name,
+            is_sensitive=is_sensitive,
+        )
 
     def __repr__(self) -> str:
         media_items = self.media if isinstance(self.media, Sequence) else [self.media]

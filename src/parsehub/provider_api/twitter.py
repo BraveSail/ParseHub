@@ -115,6 +115,7 @@ class Twitter:
                 author_name=author_name,
                 author_handle=author_handle,
                 reply_to_id=reply_to_id,
+                is_sensitive=bool(legacy.get("possibly_sensitive")),
             )
 
         if note_tweet := result.get("note_tweet"):
@@ -176,6 +177,7 @@ class Twitter:
             author_name=author_name,
             author_handle=author_handle,
             reply_to_id=reply_to_id,
+            is_sensitive=bool(legacy.get("possibly_sensitive")),
         )
 
     @staticmethod
@@ -235,6 +237,7 @@ class TwitterTweet:
         author_handle: str = "",
         reply_to_id: str = "",
         reply_to: TwitterTweet | None = None,
+        is_sensitive: bool = False,
     ):
         self.tweet_id = tweet_id
         self.full_text = re.sub(r"\s*https://t\.co/[^\s,]+$", "", full_text or "") if media else full_text
@@ -246,6 +249,8 @@ class TwitterTweet:
         """被回复推文的 ID，空字符串表示不是回复"""
         self.reply_to: TwitterTweet | None = reply_to
         """被回复的推文（由 fetch_tweet 填充，仅在是回复时）"""
+        self.is_sensitive = is_sensitive
+        """推文是否被标记为敏感内容 (legacy.possibly_sensitive)"""
 
 
 @dataclass

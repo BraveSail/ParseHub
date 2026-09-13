@@ -98,8 +98,14 @@ class TwitterParser(BaseParser):
                 title=article.title,
                 media=media,
                 author_name=tweet.author_name,
+                is_sensitive=tweet.is_sensitive,
             )
-        return MultimediaParseResult(content=f"{quote}{tweet.full_text}", media=media, author_name=tweet.author_name)
+        return MultimediaParseResult(
+            content=f"{quote}{tweet.full_text}",
+            media=media,
+            author_name=tweet.author_name,
+            is_sensitive=tweet.is_sensitive,
+        )
 
 
 __all__ = ["TwitterParser"]
